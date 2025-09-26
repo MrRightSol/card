@@ -286,6 +286,38 @@ def list_clawback_jobs() -> List[Dict[str, Any]]:
     return out
 
 
+def validate_txn_selection(selected_txn_ids: List[str]) -> Dict[str, Any]:
+    """Validate that txn ids exist and compute employee count.
+
+    Returns dict with keys: missing_txn_ids, employees_count, transactions_count.
+    """
+    from pathlib import Path
+
+    if not selected_txn_ids:
+        return {"missing_txn_ids": [], "employees_count": 0, "transactions_count": 0}
+
+    url = sqlalchemy_url_from_env()
+    if url:
+        engine = create_engine_lazy(url)
+        # Query DB for the provided txn ids
+        qmarks = ",".join(["?" for _ in selected_txn_ids])
+        sql = f"SELECT txn_id, employee_id FROM dbo.ht_Transactions WHERE txn_id IN ({qmarks})"
+        found = {}
+        with engine.connect() as conn:
+            res = conn.exec_driver_sql(sql, tuple(selected_txn_ids))
+            for r in res:
+                row = {k: r[idx] for idx, k in enumerate(res.keys())}
+                found[row.get('txn_id')] = row.get('employee_id')
+        missing = [t for t in selected_txn_ids if t not in found]
+        emp_set = set(v for v in found.values() if v is not None)
+        return {"missing_txn_ids": missing, "employees_count": len(emp_set), "transactions_count": len(found)}
+    else:
+        # file-based fallback: try to locate jobs that may contain txns (best-effort)
+        base = Path('data') / 'clawback'
+        # cannot validate against canonical transactions without DB; report all missing
+        return {"missing_txn_ids": selected_txn_ids, "employees_count": 0, "transactions_count": 0}
+
+
 def update_clawback_item(job_id: str, item_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
     url = sqlalchemy_url_from_env()
     now = _now()

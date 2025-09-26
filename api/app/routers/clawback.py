@@ -9,6 +9,7 @@ from ..services.clawback import (
     simulate_send,
     ensure_clawback_schema,
 )
+from ..services.clawback import validate_txn_selection
 
 router = APIRouter()
 
@@ -115,6 +116,23 @@ def init_schema() -> Any:
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post('/clawback/validate-selection')
+def validate_selection(body: Dict[str, Any]) -> Any:
+    """Validate a list of selected transaction IDs.
+
+    Request body: { "selected_txn_ids": ["T1","T2"] }
+    Returns: { missing_txn_ids: [...], employees_count: N, transactions_count: M }
+    """
+    ids = body.get('selected_txn_ids') if isinstance(body, dict) else None
+    if not ids or not isinstance(ids, list):
+        raise HTTPException(status_code=400, detail='selected_txn_ids is required')
+    try:
+        res = validate_txn_selection(ids)
+        return res
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get('/clawback/ui')
 def clawback_ui(request: Request) -> Any:
     # Improved single-page UI: job listing, per-item email editor with save and simulate
@@ -210,6 +228,14 @@ window.notifyAll = async function(){
 }
 // load jobs list on startup
 window.loadJobsList();
+
+// If a job query param is provided, auto-load it (e.g. /clawback/ui?job=...)
+try{
+  const params = new URLSearchParams((window.location && window.location.search) || '');
+  const jid = params.get('job');
+  if(jid){ document.getElementById('job').value = jid; window.loadJob(); }
+}catch(e){ /* ignore */ }
+
 window.render();
 </script>
 </body>
