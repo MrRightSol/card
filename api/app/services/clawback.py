@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from .db import sqlalchemy_url_from_env, create_engine_lazy
+from .logging_service import log_event
 
 
 def _now():
@@ -368,6 +369,10 @@ def update_clawback_item(job_id: str, item_id: str, updates: Dict[str, Any]) -> 
             params.extend([item_id])
             sql = f"UPDATE dbo.ht_ClawBackItems SET {', '.join(sets)} WHERE item_id = ?"
             conn.exec_driver_sql(sql, tuple(params))
+            try:
+                log_event('clawback.item_updated', {'item_id': item_id, 'updates': updates, 'job_id': job_id})
+            except Exception:
+                pass
             res = conn.exec_driver_sql("SELECT item_id, job_id, txn_id, employee_id, rendered_email, status, simulate_result, created_at, updated_at, note FROM dbo.ht_ClawBackItems WHERE item_id = ?", (item_id,))
             row = res.fetchone()
             return {k: row[idx] for idx, k in enumerate(res.keys())} if row else {}
@@ -420,5 +425,9 @@ def simulate_send(job_id: str, item_ids: Optional[List[str]] = None) -> List[Dic
             it['simulate_result'] = 'simulated_ok'
             it['updated_at'] = now
             results.append({'item_id': it.get('item_id'), 'result': 'simulated_ok'})
+        try:
+            log_event('clawback.simulate_send', {'job_id': job_id, 'items': [r['item_id'] for r in results]})
+        except Exception:
+            pass
         p.write_text(json.dumps(job, indent=2), encoding='utf-8')
     return results
