@@ -256,10 +256,19 @@ def list_clawback_jobs() -> List[Dict[str, Any]]:
                     row = {k: r[idx] for idx, k in enumerate(res.keys())}
                     # count items
                     try:
-                        c = conn.exec_driver_sql("SELECT COUNT(1) FROM dbo.ht_ClawBackItems WHERE job_id = ?", (row.get('job_id'),)).fetchone()
-                        row['employees_count'] = int(c[0]) if c else 0
+                        c = conn.exec_driver_sql("SELECT item_id, txn_id FROM dbo.ht_ClawBackItems WHERE job_id = ?", (row.get('job_id'),))
+                        items = [dict(zip(c.keys(), r2)) for r2 in c]
+                        row['employees_count'] = len(items)
+                        # compute transactions_count by summing txn_id comma lists
+                        tx_count = 0
+                        for it in items:
+                            t = it.get('txn_id') or ''
+                            if isinstance(t, str) and t.strip():
+                                tx_count += len([x for x in t.split(',') if x.strip()])
+                        row['transactions_count'] = tx_count
                     except Exception:
                         row['employees_count'] = 0
+                        row['transactions_count'] = 0
                     out.append(row)
             return out
         except Exception:
@@ -310,12 +319,28 @@ def validate_txn_selection(selected_txn_ids: List[str]) -> Dict[str, Any]:
                 found[row.get('txn_id')] = row.get('employee_id')
         missing = [t for t in selected_txn_ids if t not in found]
         emp_set = set(v for v in found.values() if v is not None)
-        return {"missing_txn_ids": missing, "employees_count": len(emp_set), "transactions_count": len(found)}
+        result = {"missing_txn_ids": missing, "employees_count": len(emp_set), "transactions_count": len(found)}
+        # Check for any selected txns that are already part of an open/non-resolved clawback item
+        already = []
+        try:
+            for tid in selected_txn_ids:
+                # search in ht_ClawBackItems.txn_id comma-joined field for this tid
+                likep = f'%,{tid},%'
+                q = "SELECT item_id, job_id, txn_id, status FROM dbo.ht_ClawBackItems WHERE (',' + txn_id + ',') LIKE ? AND (status IS NULL OR status NOT IN ('resolved','closed'))"
+                res2 = conn.exec_driver_sql(q, (likep,))
+                for r2 in res2:
+                    row2 = {k: r2[idx] for idx, k in enumerate(res2.keys())}
+                    already.append({"txn_id": tid, "item_id": row2.get('item_id'), "job_id": row2.get('job_id'), "status": row2.get('status')})
+        except Exception:
+            # if anything goes wrong, ignore already check (non-fatal)
+            already = []
+        result['already_in_open_jobs'] = already
+        return result
     else:
         # file-based fallback: try to locate jobs that may contain txns (best-effort)
         base = Path('data') / 'clawback'
         # cannot validate against canonical transactions without DB; report all missing
-        return {"missing_txn_ids": selected_txn_ids, "employees_count": 0, "transactions_count": 0}
+        return {"missing_txn_ids": selected_txn_ids, "employees_count": 0, "transactions_count": 0, 'already_in_open_jobs': []}
 
 
 def update_clawback_item(job_id: str, item_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:

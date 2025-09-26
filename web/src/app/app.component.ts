@@ -461,6 +461,9 @@ interface ScoreRow { txn_id: string; amount: number; category: string; fraud_sco
             <div style="align-self:center;margin-left:8px">
               <span style="font-size:0.9rem;color:#333">Selected: {{ selectedTxnIds.size }}</span>
             </div>
+            <div style="align-self:center;margin-left:8px">
+              <button mat-button (click)="toggleSelectAll(true)">Select all results</button>
+            </div>
           </div>
         </div>
 
