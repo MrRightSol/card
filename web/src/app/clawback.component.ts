@@ -46,6 +46,7 @@ export class ClawbackComponent implements OnChanges{
   currentEmail = '';
   jobs: any[] = [];
   busy = false;
+  apiBase: string = (localStorage.getItem('VITE_API_URL') || 'http://localhost:8080').replace(/\/$/, '');
   constructor(private http: HttpClient){}
   ngOnChanges(ch: SimpleChanges){
     if(ch['jobId'] && this.jobId) this.loadJob(this.jobId);
