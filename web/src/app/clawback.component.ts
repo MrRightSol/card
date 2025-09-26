@@ -57,16 +57,16 @@ export class ClawbackComponent implements OnChanges{
       // Check for cached payload on window (set by the creator to avoid a GET)
       const cache = (window as any).__clawback_cache || {};
       if(cache && cache[id]){ this.job = cache[id]; this.index = 0; this.refreshCurrent(); return; }
-      const j = await this.http.get<any>(`/clawback/job/${encodeURIComponent(id)}`).toPromise(); this.job = j; this.index = 0; this.refreshCurrent();
+      const j = await this.http.get<any>(this.apiBase + '/clawback/job/' + encodeURIComponent(id)).toPromise(); this.job = j; this.index = 0; this.refreshCurrent();
     }catch(e){ console.error(e); alert('Failed to load job '+id); }
   }
   async loadJobs(){
-    try{ this.jobs = await this.http.get<any[]>('/clawback/jobs').toPromise() || []; }catch(e){ console.error('loadJobs failed', e); this.jobs = []; }
+    try{ this.jobs = await this.http.get<any[]>(this.apiBase + '/clawback/jobs').toPromise() || []; }catch(e){ console.error('loadJobs failed', e); this.jobs = []; }
   }
 
   async deleteJob(jobId: string){
     if(!confirm('Delete job '+jobId+'?')) return;
-    try{ const res = await this.http.request('DELETE', '/clawback/job/'+encodeURIComponent(jobId)).toPromise(); await this.loadJobs(); if(this.jobId===jobId){ this.job = null; this.jobId = null; } }catch(e){ console.error('delete failed', e); alert('Delete failed'); }
+    try{ const res = await this.http.request('DELETE', this.apiBase + '/clawback/job/'+encodeURIComponent(jobId)).toPromise(); await this.loadJobs(); if(this.jobId===jobId){ this.job = null; this.jobId = null; } }catch(e){ console.error('delete failed', e); alert('Delete failed'); }
   }
   refreshCurrent(){
     const it = (this.job?.items || [])[this.index];
@@ -79,7 +79,7 @@ export class ClawbackComponent implements OnChanges{
     const it = (this.job?.items || [])[this.index]; if(!it) return;
     try{
       const body = { rendered_email: this.currentEmail };
-      await this.http.patch<any>(`/clawback/job/${encodeURIComponent(this.jobId || '')}/item/${encodeURIComponent(it.item_id)}`, body).toPromise();
+      await this.http.patch<any>(this.apiBase + '/clawback/job/' + encodeURIComponent(this.jobId || '') + '/item/' + encodeURIComponent(it.item_id), body).toPromise();
       // refresh job from server so UI reflects persisted state
       await this.loadJob(this.jobId || '');
       alert('Saved');
@@ -96,10 +96,10 @@ export class ClawbackComponent implements OnChanges{
         this.currentEmail = 'Sending to ' + it.employee_id + '...';
         await new Promise(r=>setTimeout(r, 300));
         try{
-          await this.http.post<any>('/clawback/job/'+encodeURIComponent(this.job.job_id)+'/simulate-send', { item_ids: [it.item_id] }).toPromise();
+          await this.http.post<any>(this.apiBase + '/clawback/job/'+encodeURIComponent(this.job.job_id)+'/simulate-send', { item_ids: [it.item_id] }).toPromise();
         }catch(err:any){ console.error('simulate post error', err); alert('Simulate failed: '+(err?.message||err)); this.busy=false; return; }
         try{
-          const updated = await this.http.get<any>('/clawback/job/'+encodeURIComponent(this.job.job_id)+'/item/'+encodeURIComponent(it.item_id)).toPromise();
+          const updated = await this.http.get<any>(this.apiBase + '/clawback/job/'+encodeURIComponent(this.job.job_id)+'/item/'+encodeURIComponent(it.item_id)).toPromise();
           this.job.items[i] = updated;
           this.currentEmail = 'Sent to ' + updated.employee_id + '\n\n' + (updated.rendered_email || '');
         }catch(e){ console.error('failed refresh item', e); }
