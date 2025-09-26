@@ -1,0 +1,22 @@
+@import url('@angular/material/prebuilt-themes/pink-bluegrey.css');
+
+html, body { height: 100%; margin: 0; font-family: Inter, system-ui, Arial, sans-serif; background:#0f172a; color:#e2e8f0; }
+.container{ max-width: 1100px; margin: 0 auto; padding: 16px; }
+.card{ background:#111827; border:1px solid #1f2937; border-radius: 10px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.25);} 
+.btn{ background:#2563eb; color:white; border:none; border-radius:8px; padding:10px 14px; cursor:pointer; }
+.btn:disabled{ opacity:.5; cursor:not-allowed }
+.input, textarea, select{ background:#0b1220; color:#e2e8f0; border:1px solid #1f2937; border-radius:8px; padding:8px; width:100%; }
+.row{ display:flex; gap:12px; flex-wrap: wrap}
+.table{ width:100%; border-collapse: collapse; }
+.table th, .table td{ border-bottom:1px solid #1f2937; padding:8px; text-align:left }
+.badge{ display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; }
+.badge.ok{ background:#065f46; }
+.badge.violation{ background:#7c2d12; }
+
+/* Fraud badge colors */
+.badge-low { background: #4caf50; }
+.badge-med { background: #ff9800; }
+.badge-high { background: #f44336; }
+.step{ opacity:.9; transition: opacity .3s ease;}
+.step.done{ opacity:1; }
+.th-sort{ cursor:pointer; user-select:none }

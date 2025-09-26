@@ -1,0 +1,20 @@
+
+%% Frontend components
+graph TD
+  App[App Shell] --> Stepper[Stepper]
+  App --> DataView[Data View]
+  App --> PolicyView[Policy View]
+  App --> TrainView[Train View]
+  App --> ResultsView[Results View]
+
+  PolicyView --> UploadPolicy[UploadPolicy Component]
+  TrainView --> TrainCard[TrainCard Component]
+  ResultsView --> ResultsTable[ResultsTable Component]
+  ResultsView --> DetailDrawer[Detail Drawer]
+
+  subgraph Services
+    ApiService[Api Service]
+    StateStore[State Store]
+  end
+  All[All Components] --> ApiService
+  All --> StateStore

@@ -1,0 +1,70 @@
+# OS / Editor
+.DS_Store
+.vscode/
+.idea/
+
+# local data
+data/
+*.db
+
+
+# Large archives and packages
+*.zip
+
+# Editor/build artifacts
+.cache/
+.parcel-cache/
+
+/web/.angular/cache/
+
+# --- global ---
+.DS_Store
+Thumbs.db
+*.log
+.env
+.env.*.local
+.vscode/
+.idea/
+*.swp
+
+# --- Node/Angular (monorepo: app under web/) ---
+web/node_modules/
+web/dist/
+web/.angular/
+web/.cache/
+web/.eslintcache
+web/.parcel-cache/
+web/.turbo/
+web/.vite/
+web/.pnpm-store/
+
+# If you have Angular outside 'web/', add these generic patterns too:
+node_modules/
+dist/
+.angular/
+.eslintcache
+.parcel-cache/
+.turbo/
+.vite/
+
+# --- Python (if present) ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# --- Go (if present) ---
+bin/
+*.test
+
+# --- Build outputs, coverage, misc ---
+coverage/
+build/
+out/
+tmp/
+
+# ignore any nested/bare git repos inside the project
+**/.git/
+**/*.git/
+**/*.git

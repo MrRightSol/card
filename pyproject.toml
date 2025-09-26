@@ -1,0 +1,23 @@
+[project]
+name = "expense-fraud-backend"
+version = "0.1.0"
+description = "FastAPI backend for Expense Fraud & Policy Compliance"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.111.0",
+    "uvicorn>=0.30.0",
+    "pydantic>=2.8.0",
+    "pandas>=2.2.2",
+    "numpy>=1.26.4",
+    "scikit-learn>=1.4.2",
+    "python-multipart>=0.0.9",
+]
+
+[project.optional-dependencies]
+openai = [
+    "openai>=1.43.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

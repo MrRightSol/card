@@ -1,0 +1,31 @@
+
+%% Data & control flow
+sequenceDiagram
+  participant U as User
+  participant W as Web (Angular)
+  participant A as API (FastAPI)
+  participant L as LLM (OpenAI)
+  participant M as ML (Model)
+  participant D as DB (MSSQL)
+
+  U->>W: Click "Generate Data"
+  W->>A: POST /generate-synth
+  A-->>W: path + preview
+
+  U->>W: Upload Policy
+  W->>A: POST /parse-policy (file/text)
+  A->>L: Prompt policy text
+  L-->>A: Rules JSON
+  A-->>W: Rules JSON
+
+  U->>W: Train Model
+  W->>A: POST /train
+  A->>M: Fit model
+  M-->>A: metrics + model.joblib
+  A-->>W: metrics
+
+  U->>W: Run Scoring
+  W->>A: POST /score
+  A->>M: Predict/score
+  A->>D: (optional) persist Scores
+  A-->>W: results (fraud_score + policy)

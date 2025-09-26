@@ -1,0 +1,134 @@
+[
+  {
+    "name": "Expense Reasonableness",
+    "description": "Expenses must be reasonable, necessary, and directly related to company business.",
+    "condition": "All expenses",
+    "threshold": null,
+    "unit": null,
+    "category": "General Principles",
+    "scope": "Worldwide",
+    "applies_when": "Any business-related expense is incurred",
+    "violation_message": "Unreasonable or unrelated expenses will not be reimbursed."
+  },
+  {
+    "name": "Expense Submission Deadline",
+    "description": "All expenses must be submitted within 30 calendar days of the trip or expense.",
+    "condition": "Expense submission",
+    "threshold": 30,
+    "unit": "days",
+    "category": "General Principles",
+    "scope": "Worldwide",
+    "applies_when": "After completing travel or incurring expense",
+    "violation_message": "Expenses submitted after 30 days may be denied."
+  },
+  {
+    "name": "Receipt Requirement",
+    "description": "All expenses must be supported by original itemized receipts.",
+    "condition": "Expense reimbursement",
+    "threshold": null,
+    "unit": null,
+    "category": "General Principles",
+    "scope": "Worldwide",
+    "applies_when": "Submitting expense report",
+    "violation_message": "Expenses without valid receipts will not be reimbursed."
+  },
+  {
+    "name": "Air Travel - Class of Service",
+    "description": "Economy for flights under 6 hours; Premium economy/business for flights over 6 hours with approval; First class not reimbursable.",
+    "condition": "Flight duration",
+    "threshold": 6,
+    "unit": "hours",
+    "category": "Air Travel",
+    "scope": "Worldwide",
+    "applies_when": "Booking flights",
+    "violation_message": "Non-compliant flight bookings will not be reimbursed."
+  },
+  {
+    "name": "Lodging - Rate Limits",
+    "description": "Standard business hotels allowed. Domestic up to $200/night; International up to $250/night, unless in high-cost cities.",
+    "condition": "Hotel booking",
+    "threshold": 200,
+    "unit": "USD per night (domestic), 250 international",
+    "category": "Lodging",
+    "scope": "Worldwide",
+    "applies_when": "Booking hotels for business travel",
+    "violation_message": "Hotel costs exceeding policy limits will not be reimbursed."
+  },
+  {
+    "name": "Meal Allowance",
+    "description": "Up to $75/day for domestic travel; up to $100/day for international travel.",
+    "condition": "Daily meal expenses",
+    "threshold": 75,
+    "unit": "USD per day (domestic), 100 international",
+    "category": "Meals & Entertainment",
+    "scope": "Worldwide",
+    "applies_when": "Claiming meals during travel",
+    "violation_message": "Meal expenses exceeding daily allowance will not be reimbursed."
+  },
+  {
+    "name": "Alcohol Limit",
+    "description": "Alcohol reimbursable only with meals, up to $25 per day.",
+    "condition": "Alcohol expenses",
+    "threshold": 25,
+    "unit": "USD per day",
+    "category": "Meals & Entertainment",
+    "scope": "Worldwide",
+    "applies_when": "Submitting meal expenses with alcohol",
+    "violation_message": "Alcohol expenses exceeding limit will not be reimbursed."
+  },
+  {
+    "name": "Ground Transportation",
+    "description": "Preferred options: ride-sharing, taxis, public transport, compact/midsize rental cars. Fuel receipts required.",
+    "condition": "Transportation booking",
+    "threshold": null,
+    "unit": null,
+    "category": "Ground Transportation",
+    "scope": "Worldwide",
+    "applies_when": "Using ground transport",
+    "violation_message": "Non-compliant ground transportation costs may be denied."
+  },
+  {
+    "name": "Mileage Reimbursement",
+    "description": "Personal vehicle use reimbursed at IRS/local government standard rate.",
+    "condition": "Personal car mileage",
+    "threshold": null,
+    "unit": "rate per mile/km",
+    "category": "Ground Transportation",
+    "scope": "Worldwide",
+    "applies_when": "Using personal vehicle for business",
+    "violation_message": "Mileage claimed above approved rate will not be reimbursed."
+  },
+  {
+    "name": "Cash Advances",
+    "description": "Allowed only for international travel in regions with limited credit card acceptance.",
+    "condition": "Travel region",
+    "threshold": null,
+    "unit": null,
+    "category": "Cash Advances",
+    "scope": "International (limited acceptance regions)",
+    "applies_when": "Traveling internationally where cards are not widely accepted",
+    "violation_message": "Unauthorized cash advances must be reimbursed to the Company."
+  },
+  {
+    "name": "Compliance & Approval",
+    "description": "Expense reports must be approved by Manager and Finance. Violations may lead to non-reimbursement or disciplinary action.",
+    "condition": "Expense approval",
+    "threshold": null,
+    "unit": null,
+    "category": "Compliance",
+    "scope": "Worldwide",
+    "applies_when": "Submitting expense reports",
+    "violation_message": "Policy violations may result in denied reimbursement and disciplinary action."
+  },
+  {
+    "name": "Exceptions",
+    "description": "Any exceptions to this policy require VP-level approval with written justification.",
+    "condition": "Policy exception",
+    "threshold": null,
+    "unit": null,
+    "category": "Exceptions",
+    "scope": "Worldwide",
+    "applies_when": "Requesting exception to policy",
+    "violation_message": "Unapproved exceptions will be treated as policy violations."
+  }
+]

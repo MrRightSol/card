@@ -1,0 +1,216 @@
+{
+  "info": {
+    "name": "FraudCompliance",
+    "_postman_id": "f1f1f1aa-bb22-cc33-dd44-ee55ff667788",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Healthz",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/healthz"
+      }
+    },
+    {
+      "name": "Generate Synth",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/generate-synth",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"rows\": 10000, \"seed\": 42}"
+        }
+      }
+    },
+    {
+      "name": "Parse Policy (upload)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{base_url}}/parse-policy",
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "policy",
+              "type": "file",
+              "src": ""
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Parse Policy (text)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/parse-policy",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"text\": \"Meals reimbursable up to $200 per day per employee.\"}"
+        }
+      }
+    },
+    {
+      "name": "Train",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/train",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"algo\": \"isoforest\", \"max_rows\": 20000}"
+        }
+      }
+    },
+    {
+      "name": "Score (CSV path)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/score",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"dataset_path\": \"<set-from-generate-synth>\"}"
+        }
+      }
+    },
+    {
+      "name": "Score (MSSQL query)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/score",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"dataset_path\": \"mssql://SELECT TOP 1000 txn_id, employee_id, merchant, city, category, amount, timestamp, channel, card_id FROM dbo.ht_Transactions\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Logs (latest)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/logs?limit=20",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "logs"
+          ],
+          "query": [
+            {
+              "key": "limit",
+              "value": "20"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "DB Setup (create ht_* tables)",
+      "request": {
+        "method": "POST",
+        "url": "{{base_url}}/db/setup"
+      }
+    },
+    {
+      "name": "DB Load CSV → ht_Transactions",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/db/load-csv",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"path\": \"{{csv_path}}\",\n  \"truncate\": true,\n  \"limit\": 50000\n}"
+        }
+      }
+    },
+    {
+      "name": "DB Load Excel → ht_Transactions",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/db/load-excel",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"path\": \"{{xlsx_path}}\",\n  \"sheet\": \"Sheet1\",\n  \"truncate\": true,\n  \"limit\": 50000\n}"
+        }
+      }
+    },
+    {
+      "name": "DB Transactions (peek)",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/db/transactions?page=0&page_size=25"
+      }
+    },
+    {
+      "name": "DB Transactions (filtered)",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/db/transactions?city=NYC&category=Meals&min_amount=20&max_amount=200&page=0&page_size=50"
+      }
+    },
+    {
+      "name": "DB Truncate Transactions",
+      "request": {
+        "method": "POST",
+        "url": "{{base_url}}/db/transactions/truncate"
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "csv_path",
+      "value": "./data/synth/latest.csv"
+    },
+    {
+      "key": "xlsx_path",
+      "value": "./data/import/transactions.xlsx"
+    }
+  ]
+}

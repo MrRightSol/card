@@ -1,0 +1,12 @@
+
+%% High-level architecture
+flowchart LR
+  User[User] --> Web[Angular 20 Web App]
+  Web --> API[FastAPI Backend]
+  API --> DB[(MS SQL Server)]
+  API --> LLM[(OpenAI API)]
+  API --> Model[(ML Models: IF/RF)]
+  subgraph Storage
+    Files[Datasets / Models on disk]
+  end
+  API <--> Files

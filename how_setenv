@@ -1,0 +1,10 @@
+export MSSQL_HOST=154.12.226.108
+export MSSQL_PORT=1433
+export MSSQL_DB=vps_dude
+export MSSQL_USER=sa
+export MSSQL_PASSWORD='NewStrong!Passw0rd'
+export MSSQL_ENCRYPT=true
+export ODBC_DRIVER='ODBC Driver 18 for SQL Server'
+export LOG_SINK=db
+# (only if you want logs in MSSQL; default is file)
+# can I spend 200 bucks on lunch

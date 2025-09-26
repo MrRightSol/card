@@ -1,0 +1,6 @@
+--55ad5865492c4616011d24acf1925f72
+Content-Disposition: form-data; name="policy"; filename="rules.json"
+Content-Type: application/json
+
+{"rules": [{"name": "Custom Meal Cap", "description": "Meals up to 60", "condition": "category == "Meals" and amount > 60", "threshold": 60, "unit": "USD", "category": "Meals", "scope": "per txn", "applies_when": "business", "violation_message": "Too high"}]}
+--55ad5865492c4616011d24acf1925f72--
