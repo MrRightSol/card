@@ -133,6 +133,50 @@ def validate_selection(body: Dict[str, Any]) -> Any:
         raise HTTPException(status_code=500, detail=str(e))
 
 
+class InitiateFromSelectionBody(BaseModel):
+    name: Optional[str] = None
+    created_by: Optional[str] = None
+    selected_txn_ids: Optional[List[str]] = None
+    template_text: Optional[str] = None
+    filters_json: Optional[Dict[str, Any]] = None
+    allow_missing: Optional[bool] = False
+
+
+@router.post('/clawback/initiate-from-selection')
+def initiate_from_selection(body: InitiateFromSelectionBody) -> Any:
+    # Require txn ids for this convenience endpoint
+    ids = body.selected_txn_ids or []
+    if not ids:
+        raise HTTPException(status_code=400, detail='selected_txn_ids is required')
+    try:
+        # Validate selection
+        validation = validate_txn_selection(ids)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'validation_failed: {e}')
+
+    missing = validation.get('missing_txn_ids', [])
+    if missing and not bool(body.allow_missing):
+        return {
+            'status': 'validation_failed',
+            'missing_txn_ids': missing,
+            'employees_count': validation.get('employees_count', 0),
+            'transactions_count': validation.get('transactions_count', 0),
+        }
+
+    # Create job (this will raise if DB is required and absent)
+    try:
+        job = create_clawback_job(
+            name=body.name,
+            created_by=body.created_by,
+            selected_txn_ids=ids,
+            template_text=body.template_text,
+            filters_json=body.filters_json,
+        )
+        return {'status': 'created', 'job_id': job.get('job_id'), 'items': job.get('items', [])}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get('/clawback/ui')
 def clawback_ui(request: Request) -> Any:
     # Improved single-page UI: job listing, per-item email editor with save and simulate
