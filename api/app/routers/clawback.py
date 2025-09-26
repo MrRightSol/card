@@ -298,3 +298,17 @@ window.render();
 </html>
 """
     return HTMLResponse(content=html, media_type='text/html')
+
+
+@router.delete('/clawback/job/{job_id}')
+def delete_job(job_id: str) -> Any:
+    try:
+        from ..services.clawback import delete_clawback_job
+        ok = delete_clawback_job(job_id)
+        if not ok:
+            raise HTTPException(status_code=500, detail='delete_failed')
+        return {'status': 'deleted'}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

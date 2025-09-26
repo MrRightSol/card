@@ -431,3 +431,34 @@ def simulate_send(job_id: str, item_ids: Optional[List[str]] = None) -> List[Dic
             pass
         p.write_text(json.dumps(job, indent=2), encoding='utf-8')
     return results
+
+
+def delete_clawback_job(job_id: str) -> bool:
+    url = sqlalchemy_url_from_env()
+    if url:
+        engine = create_engine_lazy(url)
+        with engine.begin() as conn:
+            try:
+                conn.exec_driver_sql("DELETE FROM dbo.ht_ClawBackItems WHERE job_id = ?", (job_id,))
+                conn.exec_driver_sql("DELETE FROM dbo.ht_ClawBackJobs WHERE job_id = ?", (job_id,))
+                try:
+                    log_event('clawback.job_deleted', {'job_id': job_id})
+                except Exception:
+                    pass
+                return True
+            except Exception:
+                return False
+    else:
+        from pathlib import Path
+        p = Path('data') / 'clawback' / f"job_{job_id}.json"
+        try:
+            if p.exists():
+                p.unlink()
+                try:
+                    log_event('clawback.job_deleted', {'job_id': job_id})
+                except Exception:
+                    pass
+                return True
+        except Exception:
+            return False
+    return False
