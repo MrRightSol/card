@@ -59,8 +59,41 @@ export class ClawbackComponent implements OnChanges{
     const it = (this.job?.items || [])[this.index]; if(!it) return; 
     try{ const body = { rendered_email: this.currentEmail }; const updated = await this.http.patch<any>(`/clawback/job/${encodeURIComponent(this.jobId || '')}/item/${encodeURIComponent(it.item_id)}`, body).toPromise(); this.job.items[this.index] = updated; alert('Saved'); }catch(e){ console.error(e); alert('Save failed'); }
   }
+  async saveCurrent(){
+    const it = (this.job?.items || [])[this.index]; if(!it) return;
+    try{
+      const body = { rendered_email: this.currentEmail };
+      await this.http.patch<any>(`/clawback/job/${encodeURIComponent(this.jobId || '')}/item/${encodeURIComponent(it.item_id)}`, body).toPromise();
+      // refresh job from server so UI reflects persisted state
+      await this.loadJob(this.jobId || '');
+      alert('Saved');
+    }catch(e){ console.error(e); alert('Save failed'); }
+  }
+
   async simulateAll(){
-    if(!this.job) return; try{ const ids = (this.job.items || []).map((i:any)=> i.item_id); const res = await this.http.post<any>(`/clawback/job/${encodeURIComponent(this.job.job_id)}/simulate-send`, { item_ids: ids }).toPromise(); alert('Simulated: '+(res.results?.length||0)); this.loadJob(this.job.job_id); }catch(e){ console.error(e); alert('Simulate failed'); }
+    if(!this.job) return;
+    const items = this.job.items || [];
+    try{
+      // disable UI by setting a flag
+      (window as any).__claw_sending = true;
+      for(let i=0;i<items.length;i++){
+        const it = items[i];
+        // show sending indicator in textarea
+        this.currentEmail = 'Sending to ' + it.employee_id + '...';
+        await new Promise(r=>setTimeout(r, 300));
+        // call simulate for single item
+        await this.http.post<any>(`/clawback/job/${encodeURIComponent(this.job.job_id)}/simulate-send`, { item_ids: [it.item_id] }).toPromise();
+        // refresh this single item
+        try{
+          const updated = await this.http.get<any>(`/clawback/job/${encodeURIComponent(this.job.job_id)}/item/${encodeURIComponent(it.item_id)}`).toPromise();
+          this.job.items[i] = updated;
+          this.currentEmail = 'Sent to ' + updated.employee_id + "\n\n" + (updated.rendered_email || '');
+        }catch(e){ console.error('failed refresh item', e); }
+        await new Promise(r=>setTimeout(r, 300));
+      }
+      alert('Simulation complete');
+    }catch(e){ console.error(e); alert('Simulate failed'); }
+    finally{ (window as any).__claw_sending = false; }
   }
 
   get transactionsCount(): number{
