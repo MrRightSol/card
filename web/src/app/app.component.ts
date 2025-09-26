@@ -1,4 +1,5 @@
 import { Component, signal, computed, ViewChild, AfterViewInit } from '@angular/core';
+import { ClawbackComponent } from './clawback.component';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { SecurityContext } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -51,7 +52,7 @@ interface ScoreRow { txn_id: string; amount: number; category: string; fraud_sco
       </div>
     </mat-card>
 
-    <mat-stepper labelPosition="bottom">
+    <mat-stepper labelPosition="bottom" #mainStepper>
       <mat-step [completed]="!!datasetPath()" label="Generate Data">
         <div class="row">
           <mat-form-field appearance="outline">
@@ -514,6 +515,9 @@ interface ScoreRow { txn_id: string; amount: number; category: string; fraud_sco
           <mat-paginator [pageSize]="50" [pageSizeOptions]="[25,50,100]"></mat-paginator>
         </div>
       </mat-step>
+      <mat-step label="Claw Back">
+        <app-clawback [jobId]="selectedClawJobId"></app-clawback>
+      </mat-step>
     </mat-stepper>
 
       
@@ -547,10 +551,15 @@ interface ScoreRow { txn_id: string; amount: number; category: string; fraud_sco
     MatTableModule, MatPaginatorModule, MatSortModule,
     MatListModule
     , MatProgressSpinnerModule
+    , ClawbackComponent
   ]
 })
 export class AppComponent implements AfterViewInit {
   constructor(private sanitizer: DomSanitizer){}
+  // will hold job id to pass into the Clawback component
+  selectedClawJobId: string | null = null;
+  // stepper ref
+  @ViewChild('mainStepper') stepper: any;
   apiUrl = (localStorage.getItem('VITE_API_URL') || 'http://localhost:8080').replace(/\/$/, '');
   apiUrlInput = this.apiUrl;
   health: 'ok' | 'down' | 'unknown' = 'unknown';
