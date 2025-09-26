@@ -172,12 +172,16 @@ def initiate_from_selection(body: InitiateFromSelectionBody) -> Any:
             template_text=body.template_text,
             filters_json=body.filters_json,
         )
+        # Return the created job payload as well so frontends can render
+        # immediately without needing a subsequent GET (helps when DB/file
+        # access may be inconsistent during redirects).
         return {
             'status': 'created',
             'job_id': job.get('job_id'),
             'items': job.get('items', []),
             'employees_count': job.get('employees_count', len(job.get('items', []))),
             'transactions_count': job.get('transactions_count', 0),
+            'job': job,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

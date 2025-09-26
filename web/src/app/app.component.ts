@@ -634,6 +634,11 @@ export class AppComponent implements AfterViewInit {
       }
       if(jjson.status && jjson.status==='created'){
         const jobId = jjson.job_id;
+        // cache job payload on window so embedded Claw Back component can pick it
+        try{
+          (window as any).__clawback_cache = (window as any).__clawback_cache || {};
+          (window as any).__clawback_cache[jobId] = jjson.job || null;
+        }catch(e){/* ignore */}
         // set selected job id for embedded Claw Back step and advance stepper to it
         this.selectedClawJobId = jobId;
         try{ if(this.stepper) this.stepper.selectedIndex = 4; else window.location.href = '/clawback/ui?job=' + encodeURIComponent(jobId); }catch(e){ window.location.href = '/clawback/ui?job=' + encodeURIComponent(jobId); }

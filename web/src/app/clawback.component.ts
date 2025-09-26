@@ -41,7 +41,12 @@ export class ClawbackComponent implements OnChanges{
     if(ch['jobId'] && this.jobId) this.loadJob(this.jobId);
   }
   async loadJob(id: string){
-    try{ const j = await this.http.get<any>(`/clawback/job/${encodeURIComponent(id)}`).toPromise(); this.job = j; this.index = 0; this.refreshCurrent(); }catch(e){ console.error(e); alert('Failed to load job '+id); }
+    try{
+      // Check for cached payload on window (set by the creator to avoid a GET)
+      const cache = (window as any).__clawback_cache || {};
+      if(cache && cache[id]){ this.job = cache[id]; this.index = 0; this.refreshCurrent(); return; }
+      const j = await this.http.get<any>(`/clawback/job/${encodeURIComponent(id)}`).toPromise(); this.job = j; this.index = 0; this.refreshCurrent();
+    }catch(e){ console.error(e); alert('Failed to load job '+id); }
   }
   refreshCurrent(){
     const it = (this.job?.items || [])[this.index];
