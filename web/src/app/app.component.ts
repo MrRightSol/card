@@ -457,6 +457,7 @@ interface ScoreRow { txn_id: string; amount: number; category: string; fraud_sco
               </mat-select>
             </mat-form-field>
             <button mat-stroked-button (click)="clearScoreFilters()">Clear</button>
+            <button mat-raised-button color="warn" (click)="startClawBack()" [disabled]="scores().length===0">Start Claw Back</button>
           </div>
         </div>
 
@@ -584,6 +585,41 @@ export class AppComponent implements AfterViewInit {
 
   combinedLogsFiltered(){
     return this.combinedLogs().filter(l => l.type !== 'client:file_selected');
+  }
+
+  async startClawBack(){
+    try{
+      const selected = this.scores().map(s=>s.txn_id);
+      if(!selected || selected.length===0){ alert('No transactions selected for Claw Back'); return; }
+      // Validate selection on server
+      const vresp = await fetch(`${this.apiUrl}/clawback/validate-selection`, {
+        method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ selected_txn_ids: selected })
+      });
+      if(!vresp.ok){ const txt = await vresp.text(); alert('Validation failed: '+vresp.status+' '+txt); return; }
+      const vjson = await vresp.json();
+      if(vjson.missing_txn_ids && vjson.missing_txn_ids.length){
+        const ok = confirm('Some transactions are missing from the DB (count='+vjson.missing_txn_ids.length+'). Proceed and ignore missing?');
+        if(!ok) return;
+      }
+      // create job via convenience endpoint
+      const body = { name: 'Claw Back from Scores', created_by: 'web-ui', selected_txn_ids: selected, template_text: null, allow_missing: true };
+      const jresp = await fetch(`${this.apiUrl}/clawback/initiate-from-selection`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+      const jjson = await jresp.json();
+      if(!jresp.ok){ alert('Failed to create job: '+(jjson.detail || JSON.stringify(jjson))); return; }
+      if(jjson.status && jjson.status==='validation_failed'){
+        alert('Validation failed: missing txns: '+(jjson.missing_txn_ids||[]).join(',')); return;
+      }
+      if(jjson.status && jjson.status==='created'){
+        const jobId = jjson.job_id;
+        // redirect to Claw Back UI
+        window.location.href = '/clawback/ui?job=' + encodeURIComponent(jobId);
+      } else {
+        alert('Unexpected response: '+JSON.stringify(jjson));
+      }
+    }catch(e:any){
+      console.error('startClawBack error', e);
+      alert('Failed to start Claw Back: '+String(e));
+    }
   }
 
   formatLogPayload(l: any){
