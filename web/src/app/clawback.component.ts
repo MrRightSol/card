@@ -65,7 +65,7 @@ export class ClawbackComponent implements OnChanges{
     const items = this.job.items || [];
     for(const it of items){
       if(Array.isArray(it.txn_ids)) sum += it.txn_ids.length;
-      else if(typeof it.txn_id === 'string' && it.txn_id.trim()) sum += it.txn_id.split(',').filter(x=>x.trim()).length;
+      else if(typeof it.txn_id === 'string' && it.txn_id.trim()) sum += it.txn_id.split(',').filter((x: string) => x.trim()).length;
     }
     return sum;
   }
