@@ -15,7 +15,7 @@ import { MatIconModule } from '@angular/material/icon';
     <h3>Claw Back Job: {{ jobId || '(none)' }}</h3>
     <div *ngIf="!jobId">No job selected.</div>
     <div *ngIf="job">
-      <div>Employees: {{ job.items?.length }} Transactions: {{ job.transactions_count || job.items?.reduce((a:any,i:any)=> a + (i.txn_ids ? i.txn_ids.length : (i.txn_id? i.txn_id.split(',').length:0) ), 0) }}</div>
+      <div>Employees: {{ job.items?.length }} Transactions: {{ job.transactions_count || job.items?.reduce((a,i)=> a + (i.txn_ids ? i.txn_ids.length : (i.txn_id ? i.txn_id.split(',').length : 0) ), 0) }}</div>
       <div style="margin-top:12px">
         <button mat-raised-button color="primary" (click)="prev()" [disabled]="index<=0">&lt;&lt; Prev</button>
         <button mat-raised-button color="primary" (click)="next()" [disabled]="index+1>= (job.items?.length || 0)">Next &gt;&gt;</button>
