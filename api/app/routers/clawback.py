@@ -172,7 +172,13 @@ def initiate_from_selection(body: InitiateFromSelectionBody) -> Any:
             template_text=body.template_text,
             filters_json=body.filters_json,
         )
-        return {'status': 'created', 'job_id': job.get('job_id'), 'items': job.get('items', [])}
+        return {
+            'status': 'created',
+            'job_id': job.get('job_id'),
+            'items': job.get('items', []),
+            'employees_count': job.get('employees_count', len(job.get('items', []))),
+            'transactions_count': job.get('transactions_count', 0),
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -213,7 +219,8 @@ window.loadJobsList = async function(){
   for(const j of arr){
     const btn=document.createElement('button');
     btn.style.display='block'; btn.style.width='100%'; btn.style.textAlign='left'; btn.style.marginBottom='6px';
-    btn.innerText=(j.name||'(no name)')+' ['+ (j.employees_count||0)+'] '+(j.created_at||'');
+    const txcount = j.transactions_count !== undefined ? j.transactions_count : (j.employees_count || 0);
+    btn.innerText=(j.name||'(no name)')+' ['+ (txcount)+'] '+(j.created_at||'');
     btn.onclick=()=>{ document.getElementById('job').value=j.job_id; loadJob(); };
     container.appendChild(btn);
   }

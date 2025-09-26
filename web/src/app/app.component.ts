@@ -458,6 +458,9 @@ interface ScoreRow { txn_id: string; amount: number; category: string; fraud_sco
             </mat-form-field>
             <button mat-stroked-button (click)="clearScoreFilters()">Clear</button>
             <button mat-raised-button color="warn" (click)="startClawBack()" [disabled]="scores().length===0">Start Claw Back</button>
+            <div style="align-self:center;margin-left:8px">
+              <span style="font-size:0.9rem;color:#333">Selected: {{ selectedTxnIds.size }}</span>
+            </div>
           </div>
         </div>
 
@@ -644,7 +647,7 @@ export class AppComponent implements AfterViewInit {
       return JSON.stringify(p).slice(0,300);
     }catch(e){ return '' }
   }
-  displayedColumns: string[] = ['txn_id','category','amount','fraud_score','policy'];
+  displayedColumns: string[] = ['select','txn_id','category','amount','fraud_score','policy'];
   dataSource = new MatTableDataSource<ScoreRow>([]);
   // selection state for Claw Back (per-row)
   selectedTxnIds: Set<string> = new Set<string>();
