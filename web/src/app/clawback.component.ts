@@ -49,6 +49,8 @@ export class ClawbackComponent implements OnChanges{
   constructor(private http: HttpClient){}
   ngOnChanges(ch: SimpleChanges){
     if(ch['jobId'] && this.jobId) this.loadJob(this.jobId);
+    // always refresh job list view so user can select/open/delete jobs
+    this.loadJobs();
   }
   async loadJob(id: string){
     try{
