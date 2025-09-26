@@ -56,10 +56,6 @@ export class ClawbackComponent implements OnChanges{
   prev(){ if(this.index>0){ this.index--; this.refreshCurrent(); }}
   next(){ if(this.index+1 < (this.job?.items||[]).length){ this.index++; this.refreshCurrent(); }}
   async saveCurrent(){
-    const it = (this.job?.items || [])[this.index]; if(!it) return; 
-    try{ const body = { rendered_email: this.currentEmail }; const updated = await this.http.patch<any>(`/clawback/job/${encodeURIComponent(this.jobId || '')}/item/${encodeURIComponent(it.item_id)}`, body).toPromise(); this.job.items[this.index] = updated; alert('Saved'); }catch(e){ console.error(e); alert('Save failed'); }
-  }
-  async saveCurrent(){
     const it = (this.job?.items || [])[this.index]; if(!it) return;
     try{
       const body = { rendered_email: this.currentEmail };
