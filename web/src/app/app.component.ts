@@ -463,6 +463,14 @@ interface ScoreRow { txn_id: string; amount: number; category: string; fraud_sco
 
         <div *ngIf="scores().length" style="margin-top:8px">
           <table mat-table [dataSource]="dataSource" matSort class="mat-elevation-z2">
+            <ng-container matColumnDef="select">
+              <th mat-header-cell *matHeaderCellDef>
+                <mat-checkbox [checked]="areAllVisibleSelected()" (change)="toggleSelectAll($event.checked)"></mat-checkbox>
+              </th>
+              <td mat-cell *matCellDef="let r">
+                <mat-checkbox [checked]="isSelected(r.txn_id)" (change)="toggleSelect(r.txn_id, $event.checked)"></mat-checkbox>
+              </td>
+            </ng-container>
             <ng-container matColumnDef="txn_id">
               <th mat-header-cell *matHeaderCellDef mat-sort-header>Txn</th>
               <td mat-cell *matCellDef="let r">{{ r.txn_id }}</td>
@@ -589,7 +597,7 @@ export class AppComponent implements AfterViewInit {
 
   async startClawBack(){
     try{
-      const selected = this.scores().map(s=>s.txn_id);
+      const selected = Array.from(this.selectedTxnIds.size ? this.selectedTxnIds : this.scores().map(s=>s.txn_id));
       if(!selected || selected.length===0){ alert('No transactions selected for Claw Back'); return; }
       // Validate selection on server
       const vresp = await fetch(`${this.apiUrl}/clawback/validate-selection`, {
@@ -638,6 +646,13 @@ export class AppComponent implements AfterViewInit {
   }
   displayedColumns: string[] = ['txn_id','category','amount','fraud_score','policy'];
   dataSource = new MatTableDataSource<ScoreRow>([]);
+  // selection state for Claw Back (per-row)
+  selectedTxnIds: Set<string> = new Set<string>();
+
+  isSelected(txnId: string){ return this.selectedTxnIds.has(txnId); }
+  toggleSelect(txnId: string, checked?: boolean){ if(checked===undefined) checked = !this.selectedTxnIds.has(txnId); if(checked) this.selectedTxnIds.add(txnId); else this.selectedTxnIds.delete(txnId); }
+  areAllVisibleSelected(){ const visible = this.pagedScores(); if(!visible || visible.length===0) return false; return visible.every((r:any)=> this.selectedTxnIds.has(r.txn_id)); }
+  toggleSelectAll(checked: boolean){ const visible = this.pagedScores(); for(const r of visible){ if(checked) this.selectedTxnIds.add(r.txn_id); else this.selectedTxnIds.delete(r.txn_id); } }
   // keep original unfiltered scores so filters can be applied client-side
   originalScores: ScoreRow[] = [];
   // filters for results
