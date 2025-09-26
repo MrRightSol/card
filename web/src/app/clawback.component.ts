@@ -27,11 +27,18 @@ import { MatIconModule } from '@angular/material/icon';
       <div style="margin-top:8px">
         <button mat-raised-button color="primary" (click)="saveCurrent()">Save</button>
       </div>
-      <div style="margin-top:12px">
-        <h4>Jobs</h4>
-        <div *ngFor="let j of jobs" style="display:flex; gap:8px; align-items:center; margin-bottom:6px">
-          <div style="flex:1">{{ j.name || '(no name)' }} [{{ j.transactions_count || j.employees_count || 0 }}]</div>
-          <button mat-button (click)="loadJob(j.job_id)">Open</button>
+    </div>
+    <div style="margin-top:12px">
+      <h4>Jobs</h4>
+      <div *ngFor="let j of jobs" 
+           style="border:1px solid #ccc; border-radius:4px; padding:8px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          {{ j.name || '(no name)' }}
+          [{{ j.transactions_count || j.employees_count || 0 }}]
+          from {{ j.created_at | date:'short' }}
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button mat-button color="primary" (click)="loadJob(j.job_id)">Open</button>
           <button mat-button color="warn" (click)="deleteJob(j.job_id)">Delete</button>
         </div>
       </div>

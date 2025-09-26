@@ -252,28 +252,53 @@ def list_clawback_jobs() -> List[Dict[str, Any]]:
         try:
             engine = create_engine_lazy(url)
             with engine.connect() as conn:
-                res = conn.exec_driver_sql("SELECT job_id, name, created_by, created_at, job_status FROM dbo.ht_ClawBackJobs ORDER BY created_at DESC")
+                res = conn.exec_driver_sql(
+                    "SELECT job_id, name, created_by, created_at, job_status "
+                    "FROM dbo.ht_ClawBackJobs ORDER BY created_at DESC"
+                )
                 for r in res:
                     row = {k: r[idx] for idx, k in enumerate(res.keys())}
-                    # count items
+                    # Use DB-side aggregation to compute counts reliably and avoid
+                    # loading all rows into memory / dealing with comma-joined txn_id
                     try:
-                        c = conn.exec_driver_sql("SELECT item_id, txn_id FROM dbo.ht_ClawBackItems WHERE job_id = ?", (row.get('job_id'),))
-                        items = [dict(zip(c.keys(), r2)) for r2 in c]
-                        row['employees_count'] = len(items)
-                        # compute transactions_count by summing txn_id comma lists
-                        tx_count = 0
-                        for it in items:
-                            t = it.get('txn_id') or ''
-                            if isinstance(t, str) and t.strip():
-                                tx_count += len([x for x in t.split(',') if x.strip()])
+                        # number of items (employees)
+                        c1 = conn.exec_driver_sql(
+                            "SELECT COUNT(1) AS employees_count FROM dbo.ht_ClawBackItems WHERE job_id = ?",
+                            (row.get('job_id'),),
+                        )
+                        rc1 = c1.fetchone()
+                        emp_count = int(rc1[0]) if rc1 and rc1[0] is not None else 0
+
+                        # total transactions: count commas per txn_id and sum
+                        # handle NULL/empty txn_id gracefully
+                        c2 = conn.exec_driver_sql(
+                            """
+                            SELECT SUM(
+                              CASE
+                                WHEN txn_id IS NULL OR LTRIM(RTRIM(txn_id)) = '' THEN 0
+                                ELSE LEN(txn_id) - LEN(REPLACE(txn_id, ',', '')) + 1
+                              END
+                            ) AS transactions_count
+                            FROM dbo.ht_ClawBackItems
+                            WHERE job_id = ?
+                            """,
+                            (row.get('job_id'),),
+                        )
+                        rc2 = c2.fetchone()
+                        tx_count = int(rc2[0]) if rc2 and rc2[0] is not None else 0
+
+                        row['employees_count'] = emp_count
                         row['transactions_count'] = tx_count
                     except Exception:
+                        # If the aggregate queries fail for any reason, fall back to 0
                         row['employees_count'] = 0
                         row['transactions_count'] = 0
                     out.append(row)
-            return out
+            # if DB listing returned any jobs, use them; otherwise fall back to file listing
+            if out:
+                return out
         except Exception:
-            # Fall back to file-based listing
+            # DB listing failed or returned none; fall back to file-based listing
             pass
 
     from pathlib import Path
@@ -283,13 +308,23 @@ def list_clawback_jobs() -> List[Dict[str, Any]]:
     for p in sorted(base.glob('job_*.json'), key=lambda p: p.stat().st_mtime, reverse=True):
         try:
             j = json.loads(p.read_text(encoding='utf-8'))
+            items = j.get('items', []) or []
+            # sum transaction IDs per item
+            tx_count = 0
+            for it in items:
+                t = it.get('txn_ids') or []
+                if isinstance(t, list):
+                    tx_count += len(t)
+                elif isinstance(t, str):
+                    tx_count += len([x for x in t.split(',') if x.strip()])
             out.append({
                 'job_id': j.get('job_id'),
                 'name': j.get('name'),
                 'created_by': j.get('created_by'),
                 'created_at': j.get('created_at'),
                 'job_status': j.get('job_status'),
-                'employees_count': len(j.get('items', [])),
+                'employees_count': len(items),
+                'transactions_count': tx_count,
             })
         except Exception:
             continue

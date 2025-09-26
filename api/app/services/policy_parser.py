@@ -599,6 +599,27 @@ def _heuristic_parse(text: str) -> Dict[str, Any]:
         if simple:
             log.debug("heuristic_parse (simple): found %d rules", len(simple))
 
+    # Additional heuristic: detect explicit non-reimbursable statements
+    deny_pat = re.compile(r"(?P<category>\b[A-Z][a-zA-Z ]{2,30}?\b):?\s+not\s+(?:reimbursable|allowed|permitted)", flags=re.IGNORECASE)
+    for m in deny_pat.finditer(t):
+        cat = m.group('category').strip()
+        cond = f"category == '{cat}'"
+        try:
+            sqlc = _sqlize_condition(cond)
+        except Exception:
+            sqlc = cond
+        rules.append({
+            'name': f"{cat} not reimbursable",
+            'description': f"{cat} is not reimbursable",
+            'condition': cond,
+            'sql_condition': sqlc,
+            'threshold': 0,
+            'unit': 'USD',
+            'category': cat,
+            'scope': 'per txn',
+            'applies_when': 'business travel',
+            'violation_message': f"{cat} is not reimbursable",
+        })
     return {"rules": rules, "version": "1.0", "source": "heuristic"} if rules else {}
 
 

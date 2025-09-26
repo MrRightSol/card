@@ -265,7 +265,10 @@ interface ScoreRow { txn_id: string; amount: number; category: string; fraud_sco
         <mat-card style="margin-top:16px">
           <h3>Bots</h3>
       <div class="row">
-        <button mat-raised-button color="primary" (click)="createBot()" [disabled]="!rulesDoc()">Create Bot from Parsed Policy</button>
+        <button mat-raised-button color="primary" (click)="createBot()" [disabled]="!rulesDoc() || createBotBusy">
+          Create Bot from Parsed Policy
+        </button>
+        <mat-spinner *ngIf="createBotBusy" diameter="20" style="margin-left:8px"></mat-spinner>
         <button mat-stroked-button (click)="loadBots()">Refresh</button>
       </div>
       <mat-list>
@@ -320,19 +323,19 @@ interface ScoreRow { txn_id: string; amount: number; category: string; fraud_sco
       <div style="max-height:240px; overflow:auto; border:1px solid #eee; padding:8px">
         <div *ngFor="let m of chatPolicyMessages">
           <div *ngIf="m.role==='user'" style="text-align:right"><b>You:</b> {{ m.text }}</div>
-          <div *ngIf="m.role==='bot'" style="text-align:left">
+            <div *ngIf="m.role==='bot'" style="text-align:left">
             <div *ngIf="m.thinking" style="display:flex; align-items:center; gap:8px">
               <mat-spinner diameter="20"></mat-spinner>
               <div style="font-style:italic;color:#666">Thinking...</div>
             </div>
             <div *ngIf="!m.thinking">
               <div *ngIf="m.structured">
-                <div><strong>Answer:</strong></div>
-                <div style="margin-left:8px">{{ m.structured.answer }}</div>
-                <div style="margin-top:8px"><strong>Reasoning:</strong></div>
-                <ul><li *ngFor="let r of m.structured.reasoning">{{ r }}</li></ul>
-                <div style="margin-top:8px"><strong>Policy Reference:</strong></div>
-                <ul><li *ngFor="let rf of m.structured.references">{{ rf }}</li></ul>
+                <div><strong>Verdict:</strong></div>
+                <div style="margin-left:8px">{{ m.structured.verdict }}</div>
+                <div style="margin-top:8px"><strong>Justification:</strong></div>
+                <div style="margin-left:8px">{{ m.structured.justification }}</div>
+                <div *ngIf="m.structured.citations?.length" style="margin-top:8px"><strong>Citations:</strong></div>
+                <ul *ngIf="m.structured.citations?.length"><li *ngFor="let c of m.structured.citations"><span *ngIf="c.section">{{ c.section }} — </span>{{ c.text }}</li></ul>
               </div>
               <div *ngIf="!m.structured">
                 <div *ngIf="m.formatted_html" [innerHTML]="m.formatted_html"></div>
@@ -425,11 +428,13 @@ interface ScoreRow { txn_id: string; amount: number; category: string; fraud_sco
 
       <mat-step label="Score">
         <div class="row" style="align-items:center; gap:12px">
-          <button mat-raised-button color="primary" (click)="score()" [disabled]="busy || scoringBusy || (!datasetPath() && !txTotal)">
+          <button mat-raised-button color="primary" (click)="score()" [disabled]="busy || scoringBusy || loadingSavedScores || creatingClawBack || (!datasetPath() && !txTotal)">
             <span *ngIf="!scoringBusy">Score</span>
             <span *ngIf="scoringBusy">Scoring...</span>
           </button>
+          <button mat-stroked-button (click)="loadSavedScores()" [disabled]="busy || scoringBusy || loadingSavedScores || creatingClawBack">Load</button>
           <mat-spinner *ngIf="scoringBusy" diameter="20"></mat-spinner>
+          <mat-spinner *ngIf="!scoringBusy && loadingSavedScores" diameter="20"></mat-spinner>
           <div *ngIf="scores().length">Rows: {{ scores().length }}</div>
           <div style="flex:1 1 auto"></div>
           <div style="display:flex; gap:8px; align-items:center">
@@ -458,7 +463,8 @@ interface ScoreRow { txn_id: string; amount: number; category: string; fraud_sco
               </mat-select>
             </mat-form-field>
             <button mat-stroked-button (click)="clearScoreFilters()">Clear</button>
-            <button mat-raised-button color="warn" (click)="startClawBack()" [disabled]="scores().length===0">Start Claw Back</button>
+            <button mat-raised-button color="warn" (click)="startClawBack()" [disabled]="scores().length===0 || scoringBusy || loadingSavedScores || creatingClawBack">Start Claw Back</button>
+            <mat-spinner *ngIf="creatingClawBack" diameter="20"></mat-spinner>
             <div style="align-self:center;margin-left:8px">
               <span style="font-size:0.9rem;color:#333">Selected: {{ selectedTxnIds.size }}</span>
             </div>
@@ -467,6 +473,8 @@ interface ScoreRow { txn_id: string; amount: number; category: string; fraud_sco
             </div>
           </div>
         </div>
+
+        <mat-progress-bar *ngIf="scoringBusy || loadingSavedScores || creatingClawBack" mode="indeterminate" style="margin-top:8px"></mat-progress-bar>
 
         <div *ngIf="scores().length" style="margin-top:8px">
           <table mat-table [dataSource]="dataSource" matSort class="mat-elevation-z2">
@@ -594,6 +602,10 @@ export class AppComponent implements AfterViewInit {
   sortDir: 'asc' | 'desc' = 'asc';
   busy = false;
   scoringBusy = false;
+  loadingSavedScores = false;
+  creatingClawBack = false;
+  // indicator for create-bot operation
+  createBotBusy = false;
 
   datasetPath = signal<string | null>(null);
   rulesDoc = signal<RuleDoc | null>(null);
@@ -611,6 +623,7 @@ export class AppComponent implements AfterViewInit {
   }
 
   async startClawBack(){
+    this.creatingClawBack = true;
     try{
       const selected = Array.from(this.selectedTxnIds.size ? this.selectedTxnIds : this.scores().map(s=>s.txn_id));
       if(!selected || selected.length===0){ alert('No transactions selected for Claw Back'); return; }
@@ -648,6 +661,8 @@ export class AppComponent implements AfterViewInit {
     }catch(e:any){
       console.error('startClawBack error', e);
       alert('Failed to start Claw Back: '+String(e));
+    }finally{
+      this.creatingClawBack = false;
     }
   }
 
@@ -1229,33 +1244,68 @@ export class AppComponent implements AfterViewInit {
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify(body)
       });
-      const j: ScoreRow[] = await r.json();
-      // normalize rows and apply policy rules client-side if parsed policy exists
-      const rows: ScoreRow[] = (j || []).map((it:any) => {
-        // ensure numeric fraud_score
-        it.fraud_score = Number(it.fraud_score ?? 0);
-        // ensure policy object exists
-        if(!it.policy) it.policy = { compliant: true, violated_rules: [], reason: '' } as any;
-        return it as ScoreRow;
-      });
-
-      // Apply parsed policy rules to each row (best-effort)
-      const processed = this.applyPolicyToRows(rows);
-      this.originalScores = processed;
-      // derive category list for filters
-      this.scoreCategories = Array.from(new Set(processed.map(s=>s.category).filter(Boolean)));
-      // initialize filters cleared
-      this.applyScoreFilters();
-      this.pageIndex = 0;
+      if(!r.ok){
+        const txt = await r.text();
+        alert('Score failed: ' + txt);
+        return;
+      }
+      const j = await r.json();
+      this.applyScoreResults(j);
     } finally { this.scoringBusy = false; this.busy = false; }
+  }
+
+  applyScoreResults(data: any){
+    const rows = this.normalizeScoreRows(Array.isArray(data) ? data : []);
+    const processed = this.applyPolicyToRows(rows);
+    this.originalScores = processed;
+    this.scoreCategories = Array.from(new Set(processed.map(s=>s.category).filter(Boolean)));
+    this.selectedTxnIds.clear();
+    this.pageIndex = 0;
+    this.applyScoreFilters();
+  }
+
+  normalizeScoreRows(items: any[]): ScoreRow[]{
+    return (items || []).map((it:any) => {
+      const policy = it && it.policy ? it.policy : { compliant: true, violated_rules: [], reason: '' };
+      const normalizedPolicy = {
+        compliant: policy.compliant !== undefined ? Boolean(policy.compliant) : true,
+        violated_rules: Array.isArray(policy.violated_rules) ? policy.violated_rules : [],
+        reason: policy.reason || (Array.isArray(policy.violated_rules) && policy.violated_rules.length ? policy.violated_rules.join('; ') : ''),
+      };
+      const amountRaw = Number(it?.amount ?? it?.total ?? 0);
+      return {
+        txn_id: it?.txn_id,
+        amount: isNaN(amountRaw) ? 0 : amountRaw,
+        category: it?.category,
+        fraud_score: Number(it?.fraud_score ?? 0),
+        policy: normalizedPolicy,
+      } as ScoreRow;
+    });
+  }
+
+  /**
+   * Reload scores using the last scoring parameters (dataset or DB) via POST /score.
+   */
+  async loadSavedScores(){
+    this.loadingSavedScores = true;
+    try {
+      await this.score();
+    } finally {
+      this.loadingSavedScores = false;
+    }
   }
 
   // Apply parsed rulesDoc to score rows; best-effort evaluation of simple conditions
   applyPolicyToRows(rows: ScoreRow[]): ScoreRow[]{
     const doc = this.rulesDoc();
     if(!doc || !Array.isArray(doc.rules) || doc.rules.length===0){
-      // mark everything as compliant if no rules
-      return rows.map(r => ({ ...r, policy: { compliant: true, violated_rules: [], reason: '' } }));
+      return rows.map(r => {
+        const existing: any = r.policy && typeof r.policy === 'object' ? r.policy : {};
+        const violated = Array.isArray(existing.violated_rules) ? existing.violated_rules : [];
+        const compliant = existing.compliant !== undefined ? Boolean(existing.compliant) : (violated.length === 0);
+        const reason = existing.reason || (violated.length ? violated.join('; ') : '');
+        return { ...r, policy: { compliant, violated_rules: violated, reason } };
+      });
     }
     return rows.map(r => {
       const violated: string[] = [];
@@ -1349,13 +1399,33 @@ export class AppComponent implements AfterViewInit {
   }
 
   async createBot(){
-    // construct bot name as filename_timestamp_model for easier identification
-    const baseName = (this.uploadedFileName || 'policy').replace(/[^a-zA-Z0-9-_\.]/g, '_');
-    const payload = { name: `${baseName}_${Date.now()}_${this.selectedModel}`, text: this.parsedJsonText || this.policyText, model: this.selectedModel, embed_model: this.selectedEmbedModel };
-    const r = await fetch(`${this.apiUrl}/bots`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
-    const j = await r.json();
-    this.pushLog('bot_created', { id: j.id });
-    await this.loadBots();
+    this.createBotBusy = true;
+    try {
+      // construct bot name as filename_timestamp_model for easier identification
+      const baseName = (this.uploadedFileName || 'policy').replace(/[^a-zA-Z0-9-_\.]/g, '_');
+      const payload = {
+        name: `${baseName}_${Date.now()}_${this.selectedModel}`,
+        text: this.parsedJsonText || this.policyText,
+        model: this.selectedModel,
+        embed_model: this.selectedEmbedModel
+      };
+      const resp = await fetch(`${this.apiUrl}/bots`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+      });
+      if (!resp.ok) {
+        const errText = await resp.text();
+        throw new Error(`Server error ${resp.status}: ${errText}`);
+      }
+      const j = await resp.json();
+      this.pushLog('bot_created', { id: j.id });
+      await this.loadBots();
+    } catch (err: any) {
+      console.error('createBot failed', err);
+      this.pushLog('create_bot_error', { error: String(err && err.message ? err.message : err) });
+      alert('Create bot failed: ' + (err && err.message ? err.message : err));
+    } finally {
+      this.createBotBusy = false;
+    }
   }
 
   async loadBots(){
