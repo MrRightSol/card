@@ -15,7 +15,7 @@ import { MatIconModule } from '@angular/material/icon';
     <h3>Claw Back Job: {{ jobId || '(none)' }}</h3>
     <div *ngIf="!jobId">No job selected.</div>
     <div *ngIf="job">
-      <div>Employees: {{ job.items?.length }} Transactions: {{ job.transactions_count || job.items?.reduce((a,i)=> a + (i.txn_ids ? i.txn_ids.length : (i.txn_id ? i.txn_id.split(',').length : 0) ), 0) }}</div>
+      <div>Employees: {{ job.items?.length }} Transactions: {{ transactionsCount }}</div>
       <div style="margin-top:12px">
         <button mat-raised-button color="primary" (click)="prev()" [disabled]="index<=0">&lt;&lt; Prev</button>
         <button mat-raised-button color="primary" (click)="next()" [disabled]="index+1>= (job.items?.length || 0)">Next &gt;&gt;</button>
@@ -56,5 +56,17 @@ export class ClawbackComponent implements OnChanges{
   }
   async simulateAll(){
     if(!this.job) return; try{ const ids = (this.job.items || []).map((i:any)=> i.item_id); const res = await this.http.post<any>(`/clawback/job/${encodeURIComponent(this.job.job_id)}/simulate-send`, { item_ids: ids }).toPromise(); alert('Simulated: '+(res.results?.length||0)); this.loadJob(this.job.job_id); }catch(e){ console.error(e); alert('Simulate failed'); }
+  }
+
+  get transactionsCount(): number{
+    if(!this.job) return 0;
+    if(this.job.transactions_count) return this.job.transactions_count;
+    let sum = 0;
+    const items = this.job.items || [];
+    for(const it of items){
+      if(Array.isArray(it.txn_ids)) sum += it.txn_ids.length;
+      else if(typeof it.txn_id === 'string' && it.txn_id.trim()) sum += it.txn_id.split(',').filter(x=>x.trim()).length;
+    }
+    return sum;
   }
 }
